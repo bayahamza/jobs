@@ -1,0 +1,45 @@
+name: Veille Concours Maroc — Hamza
+
+on:
+  schedule:
+    # Chaque jour à 6h UTC = 7h Maroc (hiver) / 8h (été)
+    - cron: '0 6 * * *'
+  workflow_dispatch:   # déclenchement manuel depuis l'onglet Actions
+
+jobs:
+  veille:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write   # nécessaire pour git push
+
+    steps:
+      - name: Checkout du code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0   # historique complet pour le push
+
+      - name: Setup Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      - name: Installer les dépendances
+        run: pip install -r requirements.txt
+
+      - name: Lancer le watcher
+        run: python watcher.py
+        env:
+          EMAIL_TO:         ${{ secrets.EMAIL_TO }}
+          EMAIL_FROM:       ${{ secrets.EMAIL_FROM }}
+          EMAIL_PASSWORD:   ${{ secrets.EMAIL_PASSWORD }}
+          GITHUB_PAGES_URL: ${{ secrets.GITHUB_PAGES_URL }}
+
+      - name: Commit et push du rapport (docs/index.html + cache)
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add docs/index.html rapports/seen_posts.json
+          # Ne committer que s'il y a vraiment des changements
+          git diff --staged --quiet || git commit -m "📊 Rapport du $(date '+%d/%m/%Y %H:%M') [auto]"
+          git push

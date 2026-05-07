@@ -1,0 +1,7 @@
+__pycache__/
+*.py[cod]
+rapports/errors.log
+rapports/rapport_*.html
+.claude/
+CV_*.pdf
+*.pdf
